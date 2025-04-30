@@ -1,6 +1,6 @@
 --!optimize 2
 
-if not game.IsLoaded then game.Loaded:Wait() end
+if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Workspace
     = workspace
