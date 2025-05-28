@@ -1,45 +1,30 @@
 --!optimize 2
 
-if not game:IsLoaded() then game.Loaded:Wait() end
+local rawget, type, debug_info
+    = rawget, type, debug.info
 
-local stringlower
-    = string.lower
-
-local select, checkcaller, getnamecallmethod
-    = select, checkcaller, getnamecallmethod
-
-local Remote
-
-for _, Instance in getnilinstances() do
-    if Instance.Name == "" then
-        Remote = game:GetService("ReplicatedStorage"):WaitForChild(Instance:WaitForChild("Special").Value)
-        break
+for _, Grabage in getgc(true) do
+    if type(Grabage) ~= "table" then
+        continue
     end
+
+    local Detected = rawget(Grabage, "Detected")
+
+    if type(Detected) ~= "function" or debug_info(Detected, "s") ~= ".Core.Anti" then
+        continue
+    end
+
+    local Old_debug_info
+
+    Old_debug_info = hookfunction(debug_info, function(Function, ...)
+        if Function == Detected then
+            print("Bypassing!")
+            repeat until not task.wait(9e9)
+        end
+
+        return Old_debug_info(Function, ...)
+    end)
+
+    print("Adonis Bypassed")
+    break
 end
-
-if not Remote then return end
-
-local OldFireServer: (self: Instance, ...any) -> (...any)
-local OldNameCall:   (self: DataModel | Instance, ...any) -> (...any)
-
-OldFireServer = hookfunction(Remote.FireServer, function(self, ...)
-    if stringlower(select(3, ...)) == "kick" then
-        warn(`[Adonis Bypass] Prevented a kick! Kick message: "{select(4, ...)}"`)
-        return
-    end
-
-    return OldFireServer(self, ...)
-end)
-
-OldNameCall = hookmetamethod(game, "__namecall", function(self, ...)
-    if checkcaller() then return OldNameCall(self, ...) end
-
-    local Method = getnamecallmethod()
-
-    if Method == "FireServer" and self == Remote and stringlower(select(3, ...)) == "kick" then
-        warn(`[Adonis Bypass] Prevented a kick! Kick message: "{select(4, ...)}"`)
-        return
-    end
-
-    return OldNameCall(self, ...)
-end)
