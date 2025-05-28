@@ -1,5 +1,11 @@
 --!optimize 2
 
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+task.wait(1)
+
 local rawget, type, debug_info
     = rawget, type, debug.info
 
