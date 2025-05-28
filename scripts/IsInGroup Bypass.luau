@@ -3,18 +3,29 @@
 local getnamecallmethod
     = getnamecallmethod
 
-local Speaker = cloneref(game:GetService("Players")).LocalPlayer
+local GroupService      = game:GetService("GroupService")
+local GetGroupInfoAsync = GroupService.GetGroupInfoAsync
 
-local OldNameCall
+local Speaker = game:GetService("Players").LocalPlayer
 
-OldNameCall = hookmetamethod(game, "__namecall", function(self, ...)
-    if self ~= Speaker or getnamecallmethod() ~= "IsInGroup" then
-        return OldNameCall(self, ...)
+local Old_namecall, Old_Function
+
+Old_namecall = hookmetamethod(Speaker, "__namecall", function(self, ...)
+    if self ~= Speaker then
+        return Old_namecall(self, ...)
+    elseif getnamecallmethod() ~= "IsInGroup" then
+        return Old_namecall(self, ...)
     end
 
     return true
 end)
 
-hookfunction(Speaker.IsInGroup, function(self, ...)
+Old_Function = hookfunction(Speaker.IsInGroup, function(self, GroupId)
+    if self ~= Speaker then
+        return Old_Function(self, GroupId)
+    elseif not GetGroupInfoAsync(GroupService, GroupId) then
+        return false
+    end
+
     return true
 end)
