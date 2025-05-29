@@ -1,62 +1,49 @@
 --!optimize 2
 
-local game, typeof, tostring, pcall, warn, taskwait
-    = game, typeof, tostring, pcall, warn, task.wait
-
-local getcallingscript, checkcaller, getnamecallmethod, GetFullName
-    = getcallingscript, checkcaller, getnamecallmethod, game.GetFullName
-
-local ExecutorName = identifyexecutor()
-
-local Global  = getgenv()
-local Speaker = game:GetService("Players").LocalPlayer
-
-local OldIsHooked, OldIndex, OldNameCall
-local OldFunction = clonefunction(Speaker.Kick)
-
-local function GetCalling(CallingScript, ExecutorCall)
-    local Calling = CallingScript or ExecutorCall and (`{ExecutorName} LocalScript`)
-
-    if typeof(Calling) == "Instance" then Calling = GetFullName(Calling)
-    elseif not Calling then Calling = "Unknown" end
-
-    return Calling
+if not game:IsLoaded() then
+    game.Loaded:Wait()
 end
 
-local function NewAntiKick(Method, Old)
-    return function(self, ...)
-        if Global.SafeRJ then return Old(self, ...) end
-        if Method == "__namecall" and getnamecallmethod() ~= "Kick" then return Old(self, ...) end
+task.wait(1)
 
-        local Calling = GetCalling(getcallingscript(), checkcaller())
-        local Message = not pcall(tostring, ...) and "" or tostring(...)
+local typeof, tostring, xpcall, warn
+    = typeof, tostring, xpcall, warn
 
-        warn(`[Anti Kick] Something trying to call 'Player.Kick', calling script: "{Calling}"`)
-        warn(`[Anti Kick] Bypassed kick! Kick message: "{Message}"`)
-        return (function()
-            repeat taskwait(9e9) until nil
-        end)()
-    end
+local      GetFullName, getcallingscript, checkcaller, getnamecallmethod
+    = game.GetFullName, getcallingscript, checkcaller, getnamecallmethod
+
+local ExecutorScript = identifyexecutor() .. " LocalScript"
+local Speaker        = game:GetService("Players").LocalPlayer
+
+local function GetCalling(CallingScript, IsExecutor)
+    return if typeof(CallingScript) == "Instance" then
+        GetFullName(CallingScript)
+    else if IsExecutor then ExecutorScript else "Unknown"
 end
 
-OldNameCall = hookmetamethod(game, "__namecall", function(...)
-    return OldNameCall(...)
+local function Bypass(Calling, Message)
+    local _, _Message = xpcall(tostring, function()
+        return ""
+    end, Message)
+    warn("[Anti Kick] Bypassed Kick! Calling script: \"" .. Calling .. "\". Message: " .. _Message)
+end
+
+local Old_index, Old_namecall, Old_Function
+
+Old_Function = hookfunction(Speaker.Kick, function(self, ...)
+    return if typeof(self) == "Instance" and self == Speaker then
+        Bypass(GetCalling(getcallingscript(), checkcaller()), ...)
+    else Old_Function(self, ...)
 end)
 
-OldIsHooked = hookfunction(isfunctionhooked, function(Function)
-    if Function == Speaker.Kick then return false end
-    return OldIsHooked(Function)
+Old_index = hookmetamethod(Speaker, "__index", function(self, ...)
+    return typeof(self) == "Instance" and self == Speaker and ... == "Kick" and
+        warn("[Anti Kick] " .. GetCalling(getcallingscript(), checkcaller()) .. " is trying to index Kick") 
+    or Old_index(self, ...)
 end)
 
-hookfunction  (Speaker.Kick,       NewAntiKick("hookfunction", OldFunction))
-hookmetamethod(game, "__namecall", NewAntiKick("__namecall",   OldNameCall))
-
-OldIndex = hookmetamethod(game, "__index", function(self, Key)
-    if Global.SafeRJ then return OldIndex(self, Key) end
-    if self ~= Speaker or Key ~= "Kick" then return OldIndex(self, Key) end
-
-    local Calling = GetCalling(getcallingscript(), checkcaller())
-
-    warn(`[Anti Kick] Something trying to index kick, calling script: "{Calling}"`)
-    return OldIndex(self, Key)
+Old_namecall = hookmetamethod(Speaker, "__namecall", function(self, ...)
+    return if typeof(self) == "Instance" and self == Speaker and getnamecallmethod() == "Kick" then
+        Bypass(GetCalling(getcallingscript(), checkcaller()), ...)
+    else Old_namecall(self, ...)
 end)
