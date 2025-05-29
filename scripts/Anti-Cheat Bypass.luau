@@ -66,11 +66,11 @@ if DetectedMethod == "None" then
     }
 
     Old_debug_info = hookfunction(debug_info, function(FunctionOrLevel, ...)
-        local OldResult = {Old_debug_info(FunctionOrLevel, ...)}
-
         if checkcaller() then
-            return unpack(OldResult)
+            return Old_debug_info(FunctionOrLevel, ...)
         end
+
+        local Result = {Old_debug_info(FunctionOrLevel, ...)}
 
         if Metamethods[Old_debug_info(FunctionOrLevel, "f")] then
             local Source = string_find(..., "s")
@@ -78,20 +78,20 @@ if DetectedMethod == "None" then
             local Name   = string_find(..., "n")
             local Line   = string_find(..., "l")
 
-            for Index in OldResult do
+            for Index in Result do
                 if Index == Source then
-                    OldResult[Index] = "[C]"
+                    Result[Index] = "[C]"
                 elseif Index == Arity then
-                    OldResult[Index] = 0
+                    Result[Index] = 0
                 elseif Index == Name then
-                    OldResult[Index] = ""
+                    Result[Index] = ""
                 elseif Index == Line then
-                    OldResult[Index] = -1
+                    Result[Index] = -1
                 end
             end
         end
 
-        return unpack(OldResult)
+        return unpack(Result)
     end)
 end
 
