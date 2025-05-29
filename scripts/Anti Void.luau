@@ -1,29 +1,34 @@
 --!optimize 2
 
-if not game:IsLoaded() then game.Loaded:Wait() end
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
 
-local Workspace
-    = workspace
+task.wait(1)
 
-local getcallingscript, checkcaller
-    = getcallingscript, checkcaller
+local typeof, warn
+    = typeof, warn
 
-local ExecutorName = identifyexecutor()
-local Initializing = true
+local      GetFullName, getcallingscript, checkcaller
+    = game.GetFullName, getcallingscript, checkcaller
 
-local Nan = (0 / 0)
+local ExecutorScript = identifyexecutor() .. " LocalScript"
+local Workspace      = game:GetService("Workspace")
 
-local OldNewIndex
-OldNewIndex = hookmetamethod(game, "__newindex", function(self, Key, Value)
-    if self == Workspace and Key == "FallenPartsDestroyHeight" and not Initializing then
-        local Calling = checkcaller() and `{ExecutorName} LocalScript` or getcallingscript():GetFullName()
-        warn(`[Anti Void] "{Calling}" attempted to set FallenPartsDestroyHeight to {Value}!`)
+local Old_newindex
 
-        return OldNewIndex(self, Key, Nan)
+Old_newindex = hookmetamethod(Workspace, "__newindex", function(self, Key, Value)
+    if self == Workspace and Key == "FallenPartsDestroyHeight" and Value == Value then
+        local CallingScript = getcallingscript()
+        local Calling = if typeof(CallingScript) == "Instance" then
+            GetFullName(CallingScript)
+        else if checkcaller() then ExecutorScript else "Unknown"
+
+        warn("[Anti Void] Bypassed setting FallenPartsDestroyHeight! Calling script: \"" .. Calling .. "\".")
+        return Old_newindex(self, Key, (0 / 0))
     end
 
-    return OldNewIndex(self, Key, Value)
+    return Old_newindex(self, Key, Value)
 end)
 
-Workspace.FallenPartsDestroyHeight = Nan
-Initializing = false
+Workspace.FallenPartsDestroyHeight = (0 / 0)
