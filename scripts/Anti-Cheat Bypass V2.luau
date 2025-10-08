@@ -144,7 +144,7 @@ end
             error(ErrorOrResults)
         end
 
-        return ErrorOrResults
+        return unpack(ErrorOrResults)
     end))
     ```
 --]]
